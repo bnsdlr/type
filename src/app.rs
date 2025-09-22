@@ -1,66 +1,39 @@
 #![allow(dead_code, clippy::new_without_default, clippy::single_match)]
 
+mod tab;
+
+use tab::Tab;
+
+use crate::typing::{TestState, QuoteLength, WordCount, Seconds};
+use crate::user::{Settings, Stats};
+use crate::monkeytype::{Language, QuoteLanguage};
+
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     DefaultTerminal, Frame,
     prelude::*,
-    widgets::{Block, BorderType, ListItem, Widget},
+    widgets::{Block, BorderType, Widget},
 };
 
 const TITLE: &str = "Type";
 
-#[derive(PartialEq, Eq)]
-enum Tab {
-    Main,
-    Typing,
-    Help,
-    Settings,
-}
-
-impl Tab {
-    fn from_number(num: usize) -> Option<Tab> {
-        match num {
-            n if n == Tab::Main as usize => Some(Tab::Main),
-            n if n == Tab::Typing as usize => Some(Tab::Typing),
-            n if n == Tab::Help as usize => Some(Tab::Help),
-            n if n == Tab::Settings as usize => Some(Tab::Settings),
-            _ => None,
-        }
-    }
-
-    fn to_string(&self) -> &'static str {
-        match self {
-            Self::Main => "Main",
-            Self::Typing => "Typing",
-            Self::Help => "Help",
-            Self::Settings => "Settings",
-        }
-    }
-
-    fn as_list_item(&self, is_current: bool) -> ListItem {
-        let item = ListItem::new(self.to_string());
-
-        let fg_color = if is_current {
-            Color::Cyan
-        } else {
-            Color::White
-        };
-
-        item.fg(fg_color)
-    }
-}
-
 pub struct App {
     exit: bool,
     current_tab: Tab,
+    typing_state: TestState,
+    settings: Settings,
+    stats: Stats,
 }
 
 impl App {
-    pub fn new() -> Self {
-        App {
+    pub fn new() -> crate::Result<Self> {
+        Ok(App {
             exit: false,
             current_tab: Tab::Typing,
-        }
+            typing_state: TestState::new()?,
+            settings: Settings::load(),
+            stats: Stats::load(),
+        })
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> crate::Result<()> {
@@ -115,29 +88,21 @@ impl App {
             .style(Style::default().fg(Color::Cyan).bold())
             .render(heading[0], buf);
 
-        let tabs = [Tab::Typing, Tab::Help, Tab::Settings];
+        {
+            let tabs = [Tab::Typing, Tab::Help, Tab::Settings];
 
-        let constraints = tabs
-            .iter()
-            .map(|tab| Constraint::Length(tab.to_string().len() as u16 + 4));
+            let constraints = tabs
+                .iter()
+                .map(|tab| Constraint::Length(tab.to_string().len() as u16 + 4));
 
-        let tab_layouts = Layout::horizontal(constraints)
-            .flex(layout::Flex::End)
-            .areas::<3>(heading[1])
-            .to_vec();
+            let tab_layouts = Layout::horizontal(constraints)
+                .flex(layout::Flex::End)
+                .areas::<3>(heading[1])
+                .to_vec();
 
-        for (tab, layout) in tabs.iter().zip(tab_layouts) {
-            let is_current = *tab == self.current_tab;
-            let fg = if is_current {
-                Color::Cyan
-            } else {
-                Color::White
-            };
-            let mut text = Text::from(tab.to_string()).fg(fg);
-            if is_current {
-                text = text.bold();
+            for (tab, layout) in tabs.iter().zip(tab_layouts) {
+                tab.as_text_element(&self.current_tab).render(layout, buf);
             }
-            text.render(layout, buf);
         }
 
         match self.current_tab {
@@ -187,8 +152,7 @@ impl App {
 
                 // Body
                 {
-                    Block::bordered()
-                        .render(body, buf);
+                    Block::bordered().render(body, buf);
                 }
 
                 // Bottom

@@ -1,10 +1,58 @@
-use super::DATA_DIR;
+use crate::DATA_DIR;
+use crate::typing::WordCount;
 
-use std::path::PathBuf;
+use rand::Rng;
+use serde::{Deserialize, Serialize};
+
 use std::fmt;
+use std::fs;
+use std::path::PathBuf;
 
 const LANGUAGES_DIR: &str = "languages";
 
+#[derive(Deserialize, Serialize)]
+pub struct Words {
+    bcp47: Option<String>,
+    #[serde(default = "false_bool")]
+    order_by_frequency: bool,
+    #[serde(default = "false_bool")]
+    right_to_left: bool,
+    #[serde(default = "false_bool")]
+    ligatures: bool,
+    #[serde(default = "false_bool")]
+    no_lazy_mode: bool,
+    #[serde(default = "Vec::new")]
+    additional_accents: Vec<[String; 2]>,
+    words: Vec<String>,
+}
+
+fn false_bool() -> bool {
+    false
+}
+
+impl Words {
+    pub fn from_language(language: &Language) -> crate::Result<Self> {
+        println!("Words");
+        Self::from_file(language.file())
+    }
+
+    fn from_file(file: PathBuf) -> crate::Result<Self> {
+        let contents = fs::read(file)?;
+        let json: Self = serde_json::from_slice(&contents)?;
+        Ok(json)
+    }
+
+    pub fn random(&self, count: WordCount) -> Vec<&String> {
+        let mut rng = rand::rng();
+        let words_len = self.words.len();
+
+        (0..count.as_usize())
+            .map(|_| self.words.get(rng.random_range(0..words_len)).unwrap())
+            .collect()
+    }
+}
+
+#[derive(Clone, Copy, Deserialize, Serialize)]
 pub enum Language {
     Afrikaans10k,
     Afrikaans1k,
@@ -432,6 +480,10 @@ pub enum Language {
 impl Language {
     pub fn dir() -> PathBuf {
         PathBuf::from(DATA_DIR).join(LANGUAGES_DIR)
+    }
+
+    pub fn file(&self) -> PathBuf {
+        Self::dir().join(format!("{self}.json"))
     }
 }
 
@@ -862,5 +914,11 @@ impl fmt::Display for Language {
         };
 
         write!(f, "{string}")
+    }
+}
+
+impl Default for Language {
+    fn default() -> Self {
+        Self::English
     }
 }

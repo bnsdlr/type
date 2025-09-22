@@ -1,17 +1,35 @@
 pub mod quote;
-pub mod language;
+pub mod words;
 
-pub use quote::QuoteLanguage;
-pub use language::Language;
+pub use quote::{Quote, QuoteLanguage, Quotes};
+pub use words::{Language, Words};
 
-const DATA_DIR: &str = "data";
+use crate::typing::{WordCount, QuoteLength};
 
-pub enum Mode {
-
+pub struct MonkeyType {
+    pub language: Language,
+    quotes: Option<Quotes>,
+    words: Words,
 }
 
-pub struct Text {
-    language: Language,
-    mode: Mode,
-    data: Option<String>,
+impl MonkeyType {
+    pub fn new(language: Language) -> crate::Result<Self> {
+        Ok(Self {
+            quotes: Quotes::from_language(&language)?,
+            words: Words::from_language(&language)?,
+            language,
+        })
+    }
+
+    pub fn random_words(&self, count: WordCount) -> Vec<&String> {
+        self.words.random(count)
+    }
+
+    pub fn random_quote(&self, quote_lengths: Vec<QuoteLength>) -> Option<&Quote> {
+        if let Some(quotes) = &self.quotes {
+            quotes.random(quote_lengths)
+        } else {
+            None
+        }
+    }
 }

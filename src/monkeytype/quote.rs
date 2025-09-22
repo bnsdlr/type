@@ -1,10 +1,69 @@
-use super::{Language, DATA_DIR};
+use super::Language;
+use crate::DATA_DIR;
+use crate::typing::QuoteLength;
+
+use serde::{Deserialize, Serialize};
 
 use std::fmt;
+use std::fs;
 use std::path::PathBuf;
 
 const QUOTES_DIR: &str = "quotes";
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Quote {
+    text: String,
+    source: String,
+    #[serde(deserialize_with = "QuoteLength::deserialize_json")]
+    length: QuoteLength,
+    id: usize,
+}
+ 
+#[derive(Deserialize, Serialize)]
+pub struct Quotes {
+    quotes: Vec<Quote>,
+}
+
+impl Quotes {
+    pub fn from_language(language: &Language) -> crate::Result<Option<Self>> {
+        let language = match QuoteLanguage::from_language(language) {
+            Ok(lang) => lang,
+            Err(_err) => return Ok(None),
+        };
+
+        Self::from_quote_language(language)
+    }
+
+    pub fn from_quote_language(quote_language: QuoteLanguage) -> crate::Result<Option<Self>> {
+        Self::from_file(quote_language.file())
+    }
+
+    fn from_file(file_path: PathBuf) -> crate::Result<Option<Self>> {
+        if let Ok(contents) = fs::read(file_path) {
+            let quotes: Quotes = serde_json::from_slice(&contents)?;
+
+            Ok(Some(quotes))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn random(&self, quote_lengths: Vec<QuoteLength>) -> Option<&Quote> {
+        let quotes: Vec<&Quote> = if quote_lengths.contains(&QuoteLength::All) {
+            self.quotes.iter().collect()
+        } else {
+            self.quotes.iter().filter(|quote| quote_lengths.contains(&quote.length)).collect()
+        };
+
+        println!("{}", quotes.len());
+
+        let index = rand::random_range(0..usize::max(1, quotes.len()));
+
+        quotes.get(index).copied()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
 pub enum QuoteLanguage {
     Afrikaans,
     Albanian,
@@ -92,7 +151,11 @@ impl QuoteLanguage {
         PathBuf::from(DATA_DIR).join(QUOTES_DIR)
     }
 
-    pub fn from_language(language: Language) -> crate::Result<QuoteLanguage> {
+    pub fn file(&self) -> PathBuf {
+        QuoteLanguage::dir().join(format!("{self}.json"))
+    }
+
+    pub fn from_language(language: &Language) -> crate::Result<QuoteLanguage> {
         match language {
             Language::Afrikaans10k => Ok(QuoteLanguage::Afrikaans),
             Language::Afrikaans => Ok(QuoteLanguage::Afrikaans),
@@ -429,5 +492,11 @@ impl fmt::Display for QuoteLanguage {
         };
 
         write!(f, "{string}")
+    }
+}
+
+impl Default for QuoteLanguage {
+    fn default() -> Self {
+        Self::English
     }
 }
