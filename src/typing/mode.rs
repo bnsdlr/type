@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize, de};
 
-use std::collections::HashSet;
 use std::fmt;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -105,7 +104,7 @@ impl fmt::Display for WordCount {
 pub enum Mode {
     Time(Seconds),
     Words(WordCount),
-    Quote(HashSet<QuoteLength>),
+    Quote(Vec<QuoteLength>),
 }
 
 impl Default for Mode {

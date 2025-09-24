@@ -20,7 +20,7 @@ const TITLE: &str = "Type";
 pub struct App {
     exit: bool,
     current_tab: Tab,
-    typing_state: TestState,
+    test_state: TestState,
     settings: Settings,
     stats: Stats,
 }
@@ -30,7 +30,7 @@ impl App {
         Ok(App {
             exit: false,
             current_tab: Tab::Typing,
-            typing_state: TestState::new()?,
+            test_state: TestState::new()?,
             settings: Settings::load(),
             stats: Stats::load(),
         })
@@ -153,6 +153,7 @@ impl App {
                 // Body
                 {
                     Block::bordered().render(body, buf);
+                    self.test_state.render(body, buf);
                 }
 
                 // Bottom

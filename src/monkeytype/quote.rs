@@ -48,7 +48,7 @@ impl Quotes {
         }
     }
 
-    pub fn random(&self, quote_lengths: Vec<QuoteLength>) -> Option<&Quote> {
+    pub fn random(&self, quote_lengths: &Vec<QuoteLength>) -> Option<&Quote> {
         let quotes: Vec<&Quote> = if quote_lengths.contains(&QuoteLength::All) {
             self.quotes.iter().collect()
         } else {

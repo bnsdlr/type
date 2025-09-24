@@ -25,11 +25,18 @@ impl MonkeyType {
         self.words.random(count)
     }
 
-    pub fn random_quote(&self, quote_lengths: Vec<QuoteLength>) -> Option<&Quote> {
+    pub fn random_quote(&self, quote_lengths: &Vec<QuoteLength>) -> Option<&Quote> {
         if let Some(quotes) = &self.quotes {
             quotes.random(quote_lengths)
         } else {
             None
         }
+    }
+
+    pub fn set_language(&mut self, language: Language) -> crate::Result<()> { 
+        self.quotes = Quotes::from_language(&language)?;
+        self.words = Words::from_language(&language)?;
+        self.language = language;
+        Ok(())
     }
 }

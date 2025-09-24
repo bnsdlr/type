@@ -7,5 +7,5 @@ fn main() -> typ::Result<()> {
     let result = app.run(&mut terminal);
 
     ratatui::restore();
-    result
+    result.as_error()
 }

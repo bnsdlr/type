@@ -52,7 +52,7 @@ impl Words {
     }
 }
 
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum Language {
     Afrikaans10k,
     Afrikaans1k,
