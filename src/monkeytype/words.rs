@@ -32,7 +32,6 @@ fn false_bool() -> bool {
 
 impl Words {
     pub fn from_language(language: &Language) -> crate::Result<Self> {
-        println!("Words");
         Self::from_file(language.file())
     }
 
@@ -42,13 +41,19 @@ impl Words {
         Ok(json)
     }
 
-    pub fn random(&self, count: WordCount) -> Vec<&String> {
+    pub fn random(&self, count: &WordCount) -> Option<Vec<&String>> {
         let mut rng = rand::rng();
         let words_len = self.words.len();
 
-        (0..count.as_usize())
-            .map(|_| self.words.get(rng.random_range(0..words_len)).unwrap())
-            .collect()
+        if words_len == 0 {
+            return None;
+        }
+
+        Some(
+            (0..count.as_usize())
+                .map(|_| self.words.get(rng.random_range(0..words_len)).unwrap())
+                .collect(),
+        )
     }
 }
 

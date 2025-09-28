@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize, de};
 
 use std::fmt;
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum QuoteLength {
     All = 0,
     Short = 100,

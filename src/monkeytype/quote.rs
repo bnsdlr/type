@@ -12,11 +12,11 @@ const QUOTES_DIR: &str = "quotes";
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Quote {
-    text: String,
-    source: String,
+    pub text: String,
+    pub source: String,
     #[serde(deserialize_with = "QuoteLength::deserialize_json")]
-    length: QuoteLength,
-    id: usize,
+    pub length: QuoteLength,
+    pub id: usize,
 }
  
 #[derive(Deserialize, Serialize)]
@@ -54,8 +54,6 @@ impl Quotes {
         } else {
             self.quotes.iter().filter(|quote| quote_lengths.contains(&quote.length)).collect()
         };
-
-        println!("{}", quotes.len());
 
         let index = rand::random_range(0..usize::max(1, quotes.len()));
 
@@ -402,7 +400,7 @@ impl QuoteLanguage {
             Language::Vietnamese => Ok(QuoteLanguage::Vietnamese),
             Language::Vietnamese1k => Ok(QuoteLanguage::Vietnamese),
             Language::Vietnamese5k => Ok(QuoteLanguage::Vietnamese),
-            _ => Err("Language {language} doesn't have any quotes.".into()),
+            _ => Err(crate::Error::NoQuotesForLanguage(language.clone())),
         }
     }
 }

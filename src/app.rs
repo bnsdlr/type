@@ -4,9 +4,9 @@ mod tab;
 
 use tab::Tab;
 
-use crate::typing::{TestState, QuoteLength, WordCount, Seconds};
-use crate::user::{Settings, Stats};
 use crate::monkeytype::{Language, QuoteLanguage};
+use crate::typing::{Mode, QuoteLength, Seconds, TestState, WordCount};
+use crate::user::{Settings, Stats};
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
@@ -30,7 +30,8 @@ impl App {
         Ok(App {
             exit: false,
             current_tab: Tab::Typing,
-            test_state: TestState::new()?,
+            // test_state: TestState::new()?.mode(Mode::Quote(vec![QuoteLength::Short])),
+            test_state: TestState::new()?.mode(Mode::Words(WordCount::W10)),
             settings: Settings::load(),
             stats: Stats::load(),
         })
@@ -48,18 +49,31 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key_event: event::KeyEvent) -> crate::Result<()> {
-        match key_event.kind {
-            KeyEventKind::Press => match (key_event.code, key_event.modifiers) {
-                (KeyCode::Char('q'), KeyModifiers::NONE) => self.exit = true,
-                (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.exit = true,
-                (KeyCode::Char('1'), KeyModifiers::NONE) => self.set_tab_from_num(0),
-                (KeyCode::Char('2'), KeyModifiers::NONE) => self.set_tab_from_num(1),
-                (KeyCode::Char('3'), KeyModifiers::NONE) => self.set_tab_from_num(2),
-                (KeyCode::Char('4'), KeyModifiers::NONE) => self.set_tab_from_num(3),
+        match self.current_tab {
+            Tab::Typing => match key_event.kind {
+                KeyEventKind::Press => match key_event.modifiers {
+                    KeyModifiers::SHIFT | KeyModifiers::NONE => {
+                        self.test_state.handle_key_press(key_event.code)?;
+                    }
+                    _ => (),
+                },
                 _ => (),
             },
             _ => (),
         }
+
+        match key_event.kind {
+            KeyEventKind::Press => match (key_event.code, key_event.modifiers) {
+                (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.exit = true,
+                (KeyCode::Char('1'), KeyModifiers::CONTROL) => self.set_tab_from_num(0),
+                (KeyCode::Char('2'), KeyModifiers::CONTROL) => self.set_tab_from_num(1),
+                (KeyCode::Char('3'), KeyModifiers::CONTROL) => self.set_tab_from_num(2),
+                (KeyCode::Char('4'), KeyModifiers::CONTROL) => self.set_tab_from_num(3),
+                _ => (),
+            },
+            _ => (),
+        }
+
         Ok(())
     }
 
@@ -152,7 +166,6 @@ impl App {
 
                 // Body
                 {
-                    Block::bordered().render(body, buf);
                     self.test_state.render(body, buf);
                 }
 

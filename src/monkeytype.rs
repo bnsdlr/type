@@ -21,15 +21,18 @@ impl MonkeyType {
         })
     }
 
-    pub fn random_words(&self, count: WordCount) -> Vec<&String> {
+    pub fn random_words(&self, count: &WordCount) -> Option<Vec<&String>> {
         self.words.random(count)
     }
 
-    pub fn random_quote(&self, quote_lengths: &Vec<QuoteLength>) -> Option<&Quote> {
+    pub fn random_quote(&self, quote_lengths: &Vec<QuoteLength>) -> crate::Result<&Quote> {
         if let Some(quotes) = &self.quotes {
-            quotes.random(quote_lengths)
+            match quotes.random(quote_lengths) {
+                Some(quote) => Ok(quote),
+                None => Err(crate::Error::NoQuoteWithLengths(quote_lengths.clone()))
+            }
         } else {
-            None
+            Err(crate::Error::NoQuotesForLanguage(self.language))
         }
     }
 
