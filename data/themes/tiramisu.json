@@ -1,0 +1,12 @@
+{
+  "bg": "RGB(207, 198, 185)",
+  "main": "RGB(192, 151, 111)",
+  "caret": "RGB(125, 84, 72)",
+  "sub": "RGB(192, 151, 111)",
+  "sub_alt": "RGB(208, 188, 167)",
+  "text": "RGB(125, 84, 72)",
+  "error": "RGB(233, 99, 45)",
+  "error_extra": "RGB(233, 99, 45)",
+  "colorful_error": "RGB(233, 99, 45)",
+  "colorful_error_extra": "RGB(233, 99, 45)"
+}

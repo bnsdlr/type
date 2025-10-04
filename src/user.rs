@@ -1,5 +1,5 @@
-pub mod settings;
+pub mod config;
 pub mod stats;
 
-pub use settings::Settings;
+pub use config::Config;
 pub use stats::Stats;

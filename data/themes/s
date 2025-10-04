@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+for file in $(find -f -name *.css); do
+	no_ext=${file%%.*}
+	echo "$no_ext"
+	cat "$file" | egrep -o "^\s\s\-\-.*:\s#.*;" > "$no_ext.json"
+done

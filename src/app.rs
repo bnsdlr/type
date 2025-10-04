@@ -1,12 +1,15 @@
 #![allow(dead_code, clippy::new_without_default, clippy::single_match)]
 
+mod quick_menu;
 mod tab;
 
+use quick_menu::QuickMenu;
 use tab::Tab;
 
+use crate::Config;
 use crate::monkeytype::{Language, QuoteLanguage};
 use crate::typing::{Mode, QuoteLength, Seconds, TestState, WordCount};
-use crate::user::{Settings, Stats};
+use crate::user::Stats;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
@@ -21,8 +24,9 @@ pub struct App {
     exit: bool,
     current_tab: Tab,
     test_state: TestState,
-    settings: Settings,
+    config: Config,
     stats: Stats,
+    quick_menu: QuickMenu,
 }
 
 impl App {
@@ -32,8 +36,9 @@ impl App {
             current_tab: Tab::Typing,
             // test_state: TestState::new()?.mode(Mode::Quote(vec![QuoteLength::Short])),
             test_state: TestState::new()?.mode(Mode::Words(WordCount::W10)),
-            settings: Settings::load(),
+            config: Config::load()?,
             stats: Stats::load(),
+            quick_menu: QuickMenu::new(),
         })
     }
 
@@ -49,17 +54,13 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key_event: event::KeyEvent) -> crate::Result<()> {
-        match self.current_tab {
-            Tab::Typing => match key_event.kind {
-                KeyEventKind::Press => match key_event.modifiers {
-                    KeyModifiers::SHIFT | KeyModifiers::NONE => {
-                        self.test_state.handle_key_press(key_event.code)?;
-                    }
-                    _ => (),
-                },
+        if self.quick_menu.is_visible() {
+            self.quick_menu.handle_key_event(key_event)?;
+        } else {
+            match self.current_tab {
+                Tab::Typing => self.test_state.handle_key_event(key_event)?,
                 _ => (),
-            },
-            _ => (),
+            }
         }
 
         match key_event.kind {
@@ -68,7 +69,8 @@ impl App {
                 (KeyCode::Char('1'), KeyModifiers::CONTROL) => self.set_tab_from_num(0),
                 (KeyCode::Char('2'), KeyModifiers::CONTROL) => self.set_tab_from_num(1),
                 (KeyCode::Char('3'), KeyModifiers::CONTROL) => self.set_tab_from_num(2),
-                (KeyCode::Char('4'), KeyModifiers::CONTROL) => self.set_tab_from_num(3),
+                (KeyCode::Char('?'), KeyModifiers::CONTROL) => self.set_tab_from_num(3),
+                (KeyCode::Esc, KeyModifiers::NONE) => self.quick_menu.toggle(),
                 _ => (),
             },
             _ => (),
@@ -91,6 +93,8 @@ impl App {
             .horizontal_margin(1)
             .areas(area);
 
+        self.quick_menu.render(&self.config.theme, area, buf);
+
         let heading = Layout::horizontal([
             Constraint::Length((TITLE.len() + 5) as u16),
             Constraint::Fill(1),
@@ -99,11 +103,11 @@ impl App {
         .split(heading);
 
         Text::from(TITLE)
-            .style(Style::default().fg(Color::Cyan).bold())
+            .style(Style::default().fg(self.config.theme.text).bold())
             .render(heading[0], buf);
 
         {
-            let tabs = [Tab::Typing, Tab::Help, Tab::Settings];
+            let tabs = [Tab::Typing, Tab::Settings];
 
             let constraints = tabs
                 .iter()
@@ -111,11 +115,12 @@ impl App {
 
             let tab_layouts = Layout::horizontal(constraints)
                 .flex(layout::Flex::End)
-                .areas::<3>(heading[1])
+                .areas::<2>(heading[1])
                 .to_vec();
 
             for (tab, layout) in tabs.iter().zip(tab_layouts) {
-                tab.as_text_element(&self.current_tab).render(layout, buf);
+                tab.as_text_element(&self.config.theme, &self.current_tab)
+                    .render(layout, buf);
             }
         }
 
@@ -141,8 +146,9 @@ impl App {
                 ])
                 .areas(body);
 
-                let [top, body, bottom] = Layout::vertical([
+                let [top, _margin, body, bottom] = Layout::vertical([
                     Constraint::Min(8),
+                    Constraint::Length(1),
                     Constraint::Percentage(70),
                     Constraint::Min(5),
                 ])
@@ -150,31 +156,16 @@ impl App {
 
                 // Top
                 {
-                    let [options, live_stats] =
-                        Layout::vertical([Constraint::Length(3), Constraint::Length(3)])
-                            .flex(layout::Flex::SpaceBetween)
-                            .areas(top);
-
-                    Block::bordered()
-                        .border_style(Color::Green)
-                        .render(options, buf);
-
-                    Block::bordered()
-                        .border_style(Color::Yellow)
-                        .render(live_stats, buf);
+                    self.test_state.render_options(&self.config.theme, top, buf);
                 }
 
                 // Body
                 {
-                    self.test_state.render(body, buf);
+                    self.test_state.render(&self.config.theme, body, buf);
                 }
 
                 // Bottom
-                {
-                    Block::bordered()
-                        .border_style(Color::Green)
-                        .render(bottom, buf);
-                }
+                {}
             }
             _ => (),
         }

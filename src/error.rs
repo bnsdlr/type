@@ -11,6 +11,7 @@ pub enum Error {
     NoQuoteWithLengths(Vec<QuoteLength>),
     NoQuotesForLanguage(Language),
     Generic(BoxError),
+    ParsingConfig(BoxError),
 }
 
 impl Error {
@@ -33,6 +34,7 @@ impl Error {
                 format!("There are no quotes for the language: {language}")
             }
             Self::Generic(err) => err.to_string(),
+            Self::ParsingConfig(err) => format!("Failed to parse config: {err}"),
         }
     }
 }

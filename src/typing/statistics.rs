@@ -1,10 +1,39 @@
-use ratatui::prelude::*;
+use ratatui::{
+    prelude::*,
+    widgets::{Axis, Block, Chart, Dataset, GraphType, LegendPosition},
+};
 
 use std::time::SystemTime;
 
-pub enum Char {
-    Error(u128, (usize, (char, char))),
-    Ok(u128, (usize, char)),
+#[derive(Debug)]
+pub struct Char {
+    diff: u128,
+    index: usize,
+    typed: char,
+    actual: Option<char>,
+}
+
+impl Char {
+    pub fn new(diff: u128, index: usize, typed: char, actual: Option<char>) -> Self {
+        Self {
+            diff,
+            index,
+            typed,
+            actual,
+        }
+    }
+
+    pub fn is_ok(&self) -> bool {
+        self.actual.is_none()
+    }
+
+    pub fn is_error(&self) -> bool {
+        self.actual.is_some()
+    }
+
+    pub fn is_char(&self, char: char) -> bool {
+        self.actual == Some(char) || (self.actual.is_none() && self.typed == char)
+    }
 }
 
 pub struct TestStatistics {
@@ -73,9 +102,9 @@ impl TestStatistics {
         };
 
         if typed == actual {
-            self.chars.push(Char::Ok(diff, (index, typed)));
+            self.chars.push(Char::new(diff, index, typed, None));
         } else {
-            self.chars.push(Char::Error(diff, (index, (typed, actual))));
+            self.chars.push(Char::new(diff, index, typed, Some(actual)));
         }
 
         self.last_char_typed = Some(now);
@@ -83,7 +112,7 @@ impl TestStatistics {
 
     pub fn wpm(&self) -> usize {
         let cpm = self.cpm();
-        cpm / 5
+        cpm / crate::CHARS_PER_WORD as usize
     }
 
     pub fn cpm(&self) -> usize {
@@ -95,17 +124,18 @@ impl TestStatistics {
         let (right_chars, _) =
             self.chars
                 .iter()
-                .fold((0, Vec::new()), |(count, mut already), c| match c {
-                    Char::Ok(_, (index, _)) => {
-                        let count = if already.contains(index) {
+                .fold((0, Vec::new()), |(count, mut already), c| {
+                    if c.is_ok() {
+                        let count = if already.contains(&c.index) {
                             count
                         } else {
-                            already.push(*index);
+                            already.push(c.index);
                             count + 1
                         };
                         (count, already)
+                    } else {
+                        (count, already)
                     }
-                    Char::Error(..) => (count, already),
                 });
 
         let ended = self.ended_or_now();
@@ -116,11 +146,47 @@ impl TestStatistics {
         (right_chars as f64 / minutes).round() as usize
     }
 
+    fn wpm_and_error_indexes_for_each_char(chars: &[Char]) -> (Vec<usize>, Vec<usize>) {
+        let word_count = 1 + chars.iter().filter(|c| c.is_char(' ')).count();
+
+        let mut errors = Vec::new();
+        let mut wpms = vec![(0, 0); word_count];
+
+        let mut chars = chars.iter();
+        chars.next();
+
+        let mut current_word_index = 0;
+
+        for char in chars {
+            let is_end = char.is_char(' ');
+
+            wpms[current_word_index].1 += 1;
+            wpms[current_word_index].0 +=
+                (60_000. / char.diff as f32 / crate::CHARS_PER_WORD).round() as usize;
+            if char.is_error() {
+                errors.push(char.index);
+            }
+
+            if is_end {
+                current_word_index += 1;
+            }
+        }
+
+        let wpms = wpms
+            .iter()
+            .map(|(wpm_sum, count)| if *count == 0 { 0 } else { wpm_sum / count })
+            .collect();
+
+        (wpms, errors)
+    }
+
     fn right_wrong_char_count(chars: &[Char]) -> (usize, usize) {
-        chars.iter().fold((0, 0), |(right, wrong), c| match c {
-            Char::Ok(..) => (right + 1, wrong),
-            Char::Error(..) => (right, wrong + 1),
-        })
+        chars
+            .iter()
+            .fold((0, 0), |(right, wrong), c| match c.is_ok() {
+                true => (right + 1, wrong),
+                false => (right, wrong + 1),
+            })
     }
 
     pub fn accuracy(&self) -> f32 {
@@ -131,17 +197,69 @@ impl TestStatistics {
     pub fn render(&self, area: Rect, buf: &mut Buffer) {
         if self.started.is_some() {
             Text::raw(format!("{: >3} {: >5.2}%", self.wpm(), self.accuracy())).render(area, buf);
-        } else {
         }
     }
 
     pub fn render_end(&self, area: Rect, buf: &mut Buffer) {
-        Text::raw(format!(
-            "wpm: {}, accuracy: {:.2}%",
-            self.wpm(),
-            self.accuracy()
-        ))
-        .render(area, buf);
+        // TODO make this work and look good...
+        let (wpms, _errors) = Self::wpm_and_error_indexes_for_each_char(&self.chars);
+
+        let mut highest_wpm = usize::MIN;
+        let mut lowest_wpm = usize::MAX;
+
+        let mut data = Vec::new();
+
+        for (i, wpm) in wpms.iter().enumerate() {
+            if *wpm > highest_wpm {
+                highest_wpm = *wpm;
+            } else if *wpm < lowest_wpm {
+                lowest_wpm = *wpm;
+            }
+            // data.push((*wpm as f64, i as f64));
+            data.push((i as f64, *wpm as f64));
+        }
+
+        if lowest_wpm == usize::MAX {
+            lowest_wpm = 0;
+        }
+
+        let datasets = vec![
+            Dataset::default()
+                .marker(symbols::Marker::Braille)
+                .style(Style::default().fg(Color::Yellow))
+                .graph_type(GraphType::Line)
+                .data(&data),
+        ];
+
+        let lh_diff = highest_wpm.saturating_sub(lowest_wpm);
+
+        let chart = Chart::new(datasets)
+            .x_axis(
+                Axis::default()
+                    .title("X Axis")
+                    .style(Style::default().gray())
+                    .bounds([0.0, wpms.len() as f64])
+                    .labels([
+                        "0".bold(),
+                        (wpms.len() / 2).to_string().into(),
+                        wpms.len().to_string().bold(),
+                    ]),
+            )
+            .y_axis(
+                Axis::default()
+                    .title("Y Axis")
+                    .style(Style::default().gray())
+                    .bounds([lowest_wpm.saturating_sub(10) as f64, highest_wpm as f64])
+                    .labels([
+                        lowest_wpm.to_string().bold(),
+                        (lowest_wpm + lh_diff / 2).to_string().bold(),
+                        highest_wpm.to_string().bold(),
+                    ]),
+            )
+            .legend_position(Some(LegendPosition::TopLeft))
+            .hidden_legend_constraints((Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)));
+
+        chart.render(area, buf);
     }
 }
 

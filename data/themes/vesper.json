@@ -1,0 +1,21 @@
+{
+  "bg": "RGB(16, 16, 16)",
+  "main": "RGB(255, 199, 153)",
+  "caret": "RGB(153, 255, 228)",
+  "sub": "RGB(160, 160, 160)",
+  "sub_alt": "RGB(28, 28, 28)",
+  "text": "RGB(255, 255, 255)",
+  "error": "RGB(255, 128, 128)",
+  "error_extra": "RGB(178, 89, 89)",
+  "colorful_error": "RGB(153, 255, 228)",
+  "colorful_error_extra": "RGB(153, 255, 228)",
+  "notif_border": "RGB(178, 89, 89)",
+  "notif_background": "RGB(255, 128, 128)",
+  "notif_border": "RGB(153, 255, 228)",
+  "notif_background": "RGB(153, 255, 228)",
+  "notif_border": "RGB(175, 219, 245)",
+  "notif_background": "RGB(175, 219, 245)",
+  "notif_background": "RGB(107, 178, 159)",
+  "notif_background": "RGB(139, 68, 68)",
+  "notif_background": "RGB(93, 145, 171)"
+}

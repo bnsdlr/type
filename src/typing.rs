@@ -1,16 +1,16 @@
 pub mod mode;
 pub mod statistics;
 
+pub use crate::Theme;
 pub use mode::{Mode, QuoteLength, Seconds, WordCount};
 pub use statistics::TestStatistics;
 
 use crate::monkeytype::{Language, MonkeyType};
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers, KeyEvent, KeyEventKind};
 use ratatui::{
     prelude::*,
-    style::Color,
-    widgets::{Block, Paragraph, Wrap},
+    widgets::{Paragraph, Wrap},
 };
 
 pub struct TestState {
@@ -84,34 +84,43 @@ impl TestState {
         self.language = language;
     }
 
-    pub fn handle_key_press(&mut self, key_code: KeyCode) -> crate::Result<()> {
-        match key_code {
-            KeyCode::Char(c) => {
-                let current_index = self.typed_text.len();
-                if let Some(actual_c) = self.test_text.chars().nth(current_index) {
-                    self.statistics.new_char(current_index, c, actual_c);
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> crate::Result<()> {
+        match key_event.kind {
+            KeyEventKind::Press => match key_event.modifiers {
+                KeyModifiers::SHIFT | KeyModifiers::NONE => {
+                    match key_event.code {
+                        KeyCode::Char(c) => {
+                            let current_index = self.typed_text.len();
+                            if let Some(actual_c) = self.test_text.chars().nth(current_index) {
+                                self.statistics.new_char(current_index, c, actual_c);
+                            }
+                            if current_index == self.test_text.len() {
+                                self.statistics.end();
+                            }
+                            self.typed_text.push(c);
+                        }
+                        KeyCode::Backspace => {
+                            let _ = self.typed_text.pop();
+                        }
+                        KeyCode::Tab => self.new_test()?,
+                        _ => (),
+                    }
                 }
-                if current_index == self.test_text.len() {
-                    self.statistics.end();
-                }
-                self.typed_text.push(c);
-            }
-            KeyCode::Backspace => {
-                let _ = self.typed_text.pop();
-            }
-            KeyCode::Tab => self.new_test()?,
+                _ => (),
+            },
             _ => (),
         }
-
         Ok(())
     }
 
-    pub fn render(&self, area: Rect, buf: &mut Buffer) {
+    pub fn render_options(&self, theme: &Theme, area: Rect, buf: &mut Buffer) {}
+
+    pub fn render(&self, theme: &Theme, area: Rect, buf: &mut Buffer) {
         if self.typed_text.len() >= self.test_text.len() {
             self.statistics.render_end(area, buf);
         } else {
-            let [statistics, body] = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
-                .areas(area);
+            let [statistics, body] =
+                Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
 
             self.statistics.render(statistics, buf);
 
@@ -122,14 +131,14 @@ impl TestState {
                 let color = {
                     if i < typed_text_len {
                         if c == self.typed_text[i] {
-                            Style::new().fg(Color::White)
+                            Style::new().fg(theme.text)
                         } else {
-                            Style::new().fg(Color::Red)
+                            Style::new().fg(theme.error)
                         }
                     } else if i == typed_text_len {
-                        Style::new().fg(Color::DarkGray).bg(Color::Gray)
+                        Style::new().fg(theme.untyped_letter).bg(theme.caret)
                     } else {
-                        Style::new().fg(Color::DarkGray)
+                        Style::new().fg(theme.untyped_letter)
                     }
                 };
                 if c == ' ' {
@@ -143,7 +152,6 @@ impl TestState {
 
             Paragraph::new(text)
                 .wrap(Wrap { trim: true })
-                .block(Block::bordered())
                 .render(body, buf);
         }
     }

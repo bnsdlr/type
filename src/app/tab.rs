@@ -1,3 +1,5 @@
+use crate::Theme;
+
 use ratatui::text::Text;
 use ratatui::style::{Color, Stylize};
 
@@ -5,8 +7,8 @@ use ratatui::style::{Color, Stylize};
 pub enum Tab {
     Main,
     Typing,
-    Help,
     Settings,
+    Help,
 }
 
 impl Tab {
@@ -14,8 +16,8 @@ impl Tab {
         match num {
             n if n == Tab::Main as usize => Some(Tab::Main),
             n if n == Tab::Typing as usize => Some(Tab::Typing),
-            n if n == Tab::Help as usize => Some(Tab::Help),
             n if n == Tab::Settings as usize => Some(Tab::Settings),
+            n if n == Tab::Help as usize => Some(Tab::Help),
             _ => None,
         }
     }
@@ -29,12 +31,12 @@ impl Tab {
         }
     }
 
-    pub fn as_text_element(&self, current_tab: &Tab) -> Text<'_> {
+    pub fn as_text_element(&self, theme: &Theme, current_tab: &Tab) -> Text<'_> {
         let is_current = *self == *current_tab;
         let fg = if is_current {
-            Color::Cyan
+            theme.main
         } else {
-            Color::White
+            theme.text
         };
         let mut text = Text::from(self.to_string()).fg(fg);
         if is_current {

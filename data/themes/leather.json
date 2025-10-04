@@ -1,0 +1,12 @@
+{
+  "bg": "Color::Rgb(168, 105, 72)",
+  "main": "Color::Rgb(255, 228, 188)",
+  "caret": "Color::Rgb(239, 109, 73)",
+  "sub": "Color::Rgb(129, 72, 43)",
+  "sub_alt": "Color::Rgb(154, 95, 63)",
+  "text": "Color::Rgb(255, 228, 188)",
+  "error": "Color::Rgb(202, 71, 84)",
+  "error_extra": "Color::Rgb(126, 42, 51)",
+  "colorful_error": "Color::Rgb(202, 71, 84)",
+  "colorful_error_extra": "Color::Rgb(126, 42, 51)"
+}
