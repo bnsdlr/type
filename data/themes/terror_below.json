@@ -1,12 +1,12 @@
 {
-  "bg": "RGB(11, 30, 26)",
-  "caret": "RGB(102, 172, 146)",
-  "main": "RGB(102, 172, 146)",
-  "sub": "RGB(1, 92, 83)",
-  "sub_alt": "RGB(4, 23, 21)",
-  "text": "RGB(220, 234, 229)",
-  "error": "RGB(191, 97, 106)",
-  "error_extra": "RGB(121, 62, 68)",
-  "colorful_error": "RGB(191, 97, 106)",
-  "colorful_error_extra": "RGB(121, 62, 68)"
+  "bg": { "Rgb": [11, 30, 26] },
+  "caret": { "Rgb": [102, 172, 146] },
+  "main": { "Rgb": [102, 172, 146] },
+  "sub": { "Rgb": [1, 92, 83] },
+  "sub_alt": { "Rgb": [4, 23, 21] },
+  "text": { "Rgb": [220, 234, 229] },
+  "error": { "Rgb": [191, 97, 106] },
+  "error_extra": { "Rgb": [121, 62, 68] },
+  "colorful_error": { "Rgb": [191, 97, 106] },
+  "colorful_error_extra": { "Rgb": [121, 62, 68] }
 }

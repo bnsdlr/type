@@ -1,5 +1,6 @@
 pub mod quote;
 pub mod words;
+pub mod punctuation;
 
 pub use quote::{Quote, QuoteLanguage, Quotes};
 pub use words::{Language, Words};
@@ -21,8 +22,8 @@ impl MonkeyType {
         })
     }
 
-    pub fn random_words(&self, count: &WordCount) -> Option<Vec<&String>> {
-        self.words.random(count)
+    pub fn random_words(&self, count: &WordCount, punctuation: bool, numbers: bool) -> Option<Vec<&String>> {
+        self.words.random(count, punctuation, numbers)
     }
 
     pub fn random_quote(&self, quote_lengths: &Vec<QuoteLength>) -> crate::Result<&Quote> {

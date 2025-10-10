@@ -102,13 +102,91 @@ impl fmt::Display for WordCount {
 }
 
 pub enum Mode {
-    Time(Seconds),
-    Words(WordCount),
-    Quote(Vec<QuoteLength>),
+    Time {
+        seconds: Seconds,
+        punctuation: bool,
+        numbers: bool,
+    },
+    Words {
+        word_count: WordCount,
+        punctuation: bool,
+        numbers: bool,
+    },
+    Quote {
+        lengths: Vec<QuoteLength>,
+    },
+}
+
+impl Mode {
+    pub fn time(seconds: Seconds) -> Self {
+        Self::Time {
+            seconds,
+            punctuation: false,
+            numbers: false,
+        }
+    }
+
+    pub fn words(word_count: WordCount) -> Self {
+        Self::Words {
+            word_count,
+            punctuation: false,
+            numbers: false,
+        }
+    }
+
+    pub fn quote(lengths: Vec<QuoteLength>) -> Self {
+        Self::Quote { lengths }
+    }
+
+    pub fn punctuation(self) -> Self {
+        match self {
+            Self::Time {
+                seconds, numbers, ..
+            } => Self::Time {
+                seconds,
+                punctuation: true,
+                numbers,
+            },
+            Self::Words {
+                word_count,
+                numbers,
+                ..
+            } => Self::Words {
+                word_count,
+                punctuation: true,
+                numbers,
+            },
+            Self::Quote { lengths } => Self::Quote { lengths },
+        }
+    }
+
+    pub fn numbers(self) -> Self {
+        match self {
+            Self::Time {
+                seconds,
+                punctuation,
+                ..
+            } => Self::Time {
+                seconds,
+                punctuation,
+                numbers: true,
+            },
+            Self::Words {
+                word_count,
+                punctuation,
+                ..
+            } => Self::Words {
+                word_count,
+                punctuation,
+                numbers: true,
+            },
+            Self::Quote { lengths } => Self::Quote { lengths },
+        }
+    }
 }
 
 impl Default for Mode {
     fn default() -> Self {
-        Self::Time(Seconds::S60)
+        Self::time(Seconds::S60)
     }
 }

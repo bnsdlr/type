@@ -1,4 +1,6 @@
-pub mod color;
+use super::ratatui_wrappers;
+
+use crate::app::quick_menu::QuickMenuItem;
 
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize, de, ser};
@@ -8,48 +10,45 @@ use std::path::PathBuf;
 
 #[derive(Deserialize, Serialize)]
 struct ThemeSerializer {
-    bg: Option<color::Color>,
-    main: Option<color::Color>,
-    caret: Option<color::Color>,
-    text: Option<color::Color>,
-    sub: Option<color::Color>,
-    sub_alt: Option<color::Color>,
-    error: Option<color::Color>,
-    error_extra: Option<color::Color>,
-    colorful_error: Option<color::Color>,
-    colorful_error_extra: Option<color::Color>,
-    untyped_letter: Option<color::Color>,
+    bg: Option<ratatui_wrappers::Color>,
+    main: Option<ratatui_wrappers::Color>,
+    caret: Option<ratatui_wrappers::Color>,
+    text: Option<ratatui_wrappers::Color>,
+    sub: Option<ratatui_wrappers::Color>,
+    sub_alt: Option<ratatui_wrappers::Color>,
+    error: Option<ratatui_wrappers::Color>,
+    error_extra: Option<ratatui_wrappers::Color>,
+    colorful_error: Option<ratatui_wrappers::Color>,
+    colorful_error_extra: Option<ratatui_wrappers::Color>,
+    untyped_letter: Option<ratatui_wrappers::Color>,
 }
 
 impl ThemeSerializer {
-    fn to_theme(self, name: String) -> Theme {
+    fn theme(self, name: String) -> Theme {
         let defaults = Theme::default();
 
-        let bg = self.bg.map(|c| Color::from(c)).unwrap_or(defaults.bg);
-        let main = self.main.map(|c| Color::from(c)).unwrap_or(defaults.main);
-        let caret = self.caret.map(|c| Color::from(c)).unwrap_or(defaults.caret);
-        let text = self.text.map(|c| Color::from(c)).unwrap_or(defaults.text);
-        let sub = self.sub.map(|c| Color::from(c)).unwrap_or(defaults.sub);
-        let sub_alt = self
-            .sub_alt
-            .map(|c| Color::from(c))
-            .unwrap_or(defaults.sub_alt);
-        let error = self.error.map(|c| Color::from(c)).unwrap_or(defaults.error);
+        let bg = self.bg.map(Color::from).unwrap_or(defaults.bg);
+        let main = self.main.map(Color::from).unwrap_or(defaults.main);
+        let caret = self.caret.map(Color::from).unwrap_or(defaults.caret);
+        let text = self.text.map(Color::from).unwrap_or(defaults.text);
+        let sub = self.sub.map(Color::from).unwrap_or(defaults.sub);
+        let sub_alt = self.sub_alt.map(Color::from).unwrap_or(defaults.sub_alt);
+        let error = self.error.map(Color::from).unwrap_or(defaults.error);
         let error_extra = self
             .error_extra
-            .map(|c| Color::from(c))
+            .map(Color::from)
             .unwrap_or(defaults.error_extra);
         let colorful_error = self
             .colorful_error
-            .map(|c| Color::from(c))
+            .map(Color::from)
             .unwrap_or(defaults.colorful_error);
         let colorful_error_extra = self
             .colorful_error_extra
-            .map(|c| Color::from(c))
+            .map(Color::from)
             .unwrap_or(defaults.colorful_error_extra);
         let untyped_letter = self
             .untyped_letter
-            .map(|c| Color::from(c))
+            .map(Color::from)
             .unwrap_or(defaults.untyped_letter);
 
         Theme {
@@ -69,7 +68,7 @@ impl ThemeSerializer {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Theme {
     pub name: String,
     pub bg: Color,
@@ -98,7 +97,7 @@ impl Theme {
         let path = Self::get_path(&name);
         let content = fs::read(path)?;
         let theme_serializer: ThemeSerializer = serde_json::from_slice(&content)?;
-        let theme = theme_serializer.to_theme(name);
+        let theme = theme_serializer.theme(name);
         Ok(theme)
     }
 
@@ -112,8 +111,32 @@ impl Theme {
 
     pub fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: ser::Serializer {
+        S: ser::Serializer,
+    {
         serializer.serialize_str(&self.name)
+    }
+
+    pub fn all() -> crate::Result<Vec<Theme>> {
+        let mut themes = Vec::new();
+
+        for entry in fs::read_dir(Theme::get_dir_path())? {
+            let entry = entry?;
+            if let Some(name) = entry.path().file_name() {
+                if let Some(name) = name.to_str() {
+                    if let Some((file_name, extension)) = name.rsplit_once(".") {
+                        if extension == "json" {
+                            themes.push(Theme::load(file_name.to_string())?);
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(themes)
+    }
+
+    pub fn all_quick_menu_items() -> crate::Result<QuickMenuItem> {
+        Ok(QuickMenuItem::from_iter(Self::all()?))
     }
 }
 
@@ -122,7 +145,7 @@ impl Default for Theme {
         Self {
             name: "default".to_string(),
             bg: Color::Black,
-            main: Color::White,
+            main: Color::Yellow,
             caret: Color::LightYellow,
             text: Color::White,
             sub: Color::Gray,

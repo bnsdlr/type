@@ -400,7 +400,7 @@ impl QuoteLanguage {
             Language::Vietnamese => Ok(QuoteLanguage::Vietnamese),
             Language::Vietnamese1k => Ok(QuoteLanguage::Vietnamese),
             Language::Vietnamese5k => Ok(QuoteLanguage::Vietnamese),
-            _ => Err(crate::Error::NoQuotesForLanguage(language.clone())),
+            _ => Err(crate::Error::NoQuotesForLanguage(*language)),
         }
     }
 }

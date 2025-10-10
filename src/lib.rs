@@ -6,7 +6,7 @@ pub mod error;
 
 pub use app::App;
 pub use error::{Error, Result};
-pub use user::{Config, config::theme::Theme};
+pub use user::{Config, config::style::{Theme, Style}};
 
 pub const DATA_DIR: &str = "data";
 pub const CONFIG_DIR: &str = "config";

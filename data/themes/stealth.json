@@ -1,12 +1,12 @@
 {
-  "bg": "Color::Rgb(1, 2, 3)",
-  "main": "Color::Rgb(56, 62, 66)",
-  "caret": "Color::Rgb(226, 83, 3)",
-  "sub": "Color::Rgb(94, 103, 110)",
-  "sub_alt": "Color::Rgb(18, 18, 18)",
-  "text": "Color::Rgb(56, 62, 66)",
-  "error": "Color::Rgb(226, 83, 3)",
-  "error_extra": "Color::Rgb(115, 40, 12)",
-  "colorful_error": "Color::Rgb(226, 83, 3)",
-  "colorful_error_extra": "Color::Rgb(115, 40, 12)"
+  "bg": { "Rgb": [1, 2, 3] },
+  "main": { "Rgb": [56, 62, 66] },
+  "caret": { "Rgb": [226, 83, 3] },
+  "sub": { "Rgb": [94, 103, 110] },
+  "sub_alt": { "Rgb": [18, 18, 18] },
+  "text": { "Rgb": [56, 62, 66] },
+  "error": { "Rgb": [226, 83, 3] },
+  "error_extra": { "Rgb": [115, 40, 12] },
+  "colorful_error": { "Rgb": [226, 83, 3] },
+  "colorful_error_extra": { "Rgb": [115, 40, 12] }
 }

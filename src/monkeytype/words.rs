@@ -41,7 +41,7 @@ impl Words {
         Ok(json)
     }
 
-    pub fn random(&self, count: &WordCount) -> Option<Vec<&String>> {
+    pub fn random(&self, count: &WordCount, punctuation: bool, numbers: bool) -> Option<Vec<&String>> {
         let mut rng = rand::rng();
         let words_len = self.words.len();
 

@@ -1,7 +1,7 @@
 #![allow(dead_code, clippy::new_without_default, clippy::single_match)]
 
-mod quick_menu;
-mod tab;
+pub mod quick_menu;
+pub mod tab;
 
 use quick_menu::QuickMenu;
 use tab::Tab;
@@ -35,7 +35,8 @@ impl App {
             exit: false,
             current_tab: Tab::Typing,
             // test_state: TestState::new()?.mode(Mode::Quote(vec![QuoteLength::Short])),
-            test_state: TestState::new()?.mode(Mode::Words(WordCount::W10)),
+            test_state: TestState::new()?.mode(Mode::words(WordCount::W10)),
+            // test_state: TestState::new()?.mode(Mode::words(WordCount::W50).punctuation().numbers()),
             config: Config::load()?,
             stats: Stats::load(),
             quick_menu: QuickMenu::new(),
@@ -55,7 +56,7 @@ impl App {
 
     fn handle_key_event(&mut self, key_event: event::KeyEvent) -> crate::Result<()> {
         if self.quick_menu.is_visible() {
-            self.quick_menu.handle_key_event(key_event)?;
+            self.quick_menu.handle_key_event(key_event, self.config)?;
         } else {
             match self.current_tab {
                 Tab::Typing => self.test_state.handle_key_event(key_event)?,
@@ -89,11 +90,13 @@ impl App {
         let area = frame.area();
         let buf = frame.buffer_mut();
 
+        Block::new()
+            .style(Style::new().bg(self.config.style.theme.bg))
+            .render(area, buf);
+
         let [heading, body] = Layout::vertical([Constraint::Length(3), Constraint::Fill(1)])
             .horizontal_margin(1)
             .areas(area);
-
-        self.quick_menu.render(&self.config.theme, area, buf);
 
         let heading = Layout::horizontal([
             Constraint::Length((TITLE.len() + 5) as u16),
@@ -103,7 +106,7 @@ impl App {
         .split(heading);
 
         Text::from(TITLE)
-            .style(Style::default().fg(self.config.theme.text).bold())
+            .style(Style::default().fg(self.config.style.theme.text).bold())
             .render(heading[0], buf);
 
         {
@@ -119,7 +122,7 @@ impl App {
                 .to_vec();
 
             for (tab, layout) in tabs.iter().zip(tab_layouts) {
-                tab.as_text_element(&self.config.theme, &self.current_tab)
+                tab.as_text_element(&self.config.style.theme, &self.current_tab)
                     .render(layout, buf);
             }
         }
@@ -131,7 +134,7 @@ impl App {
                     .areas(body);
 
                 Block::bordered()
-                    .border_type(BorderType::Plain)
+                    .border_type(self.config.style.border_type)
                     .render(body, buf);
 
                 // Line::from("Welcome to Type!")
@@ -156,12 +159,12 @@ impl App {
 
                 // Top
                 {
-                    self.test_state.render_options(&self.config.theme, top, buf);
+                    self.test_state.render_options(&self.config.style, top, buf);
                 }
 
                 // Body
                 {
-                    self.test_state.render(&self.config.theme, body, buf);
+                    self.test_state.render(&self.config.style, body, buf);
                 }
 
                 // Bottom
@@ -169,5 +172,7 @@ impl App {
             }
             _ => (),
         }
+
+        self.quick_menu.render(&self.config.style, area, buf);
     }
 }
